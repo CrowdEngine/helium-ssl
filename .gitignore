@@ -1,0 +1,6 @@
+.DS_Store
+.env
+config/nginx.conf
+node_modules/
+logs/
+tmp/

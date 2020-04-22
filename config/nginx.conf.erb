@@ -1,0 +1,182 @@
+<% begin; require 'dotenv/load'; rescue LoadError; puts "dotenv is not present"; end %>
+
+daemon off;
+
+worker_processes <%= ENV['NGINX_WORKERS'] || 4 %>;
+
+events {
+  accept_mutex on;
+  worker_connections 1024;
+}
+
+http {
+  gzip on;
+  gzip_comp_level 3;
+  gzip_min_length 150;
+  gzip_proxied any;
+  gzip_types text/plain text/css text/json text/javascript
+    application/javascript application/x-javascript application/json
+    application/rss+xml application/vnd.ms-fontobject application/x-font-ttf
+    application/xml font/opentype image/svg+xml text/xml;
+
+  server_tokens off;
+
+  log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
+  access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || 'logs/nginx/access.log' %> l2met;
+  error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || 'logs/nginx/error.log' %> notice;
+  error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || 'logs/nginx/error.log' %> info;
+
+  include mime.types;
+  default_type application/octet-stream;
+  sendfile on;
+
+  #Must read the body in 5 seconds.
+  client_body_timeout 5;
+
+  upstream app_server {
+    server <%= ENV['UPSTREAM_SERVER_URL'] %> fail_timeout=0;
+  }
+
+  # The "auto_ssl" shared dict should be defined with enough storage space to
+  # hold your certificate data. 1MB of storage holds certificates for
+  # approximately 100 separate domains.
+  lua_shared_dict auto_ssl 1m;
+  # The "auto_ssl_settings" shared dict is used to temporarily store various settings
+  # like the secret used by the hook server on port 8999. Do not change or
+  # omit it.
+  lua_shared_dict auto_ssl_settings 64k;
+
+  # A DNS resolver must be defined for OCSP stapling to function.
+  #
+  # This example uses Google's DNS server. You may want to use your system's
+  # default DNS servers, which can be found in /etc/resolv.conf. If your network
+  # is not IPv6 compatible, you may wish to disable IPv6 results by using the
+  # "ipv6=off" flag (like "resolver 8.8.8.8 ipv6=off").
+  resolver 8.8.8.8;
+
+  # Initial setup tasks.
+  init_by_lua_block {
+    auto_ssl = (require "resty.auto-ssl").new()
+
+    auto_ssl:set("dir", <%= '"%s"' % ENV.fetch('RESTY_AUTO_SSL_DIR', "/resty-auto-ssl") %>)
+    auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
+    <% if redis_url = ENV['REDISTOGO_URL'] || ENV['REDIS_URL'] %>
+    <% redis_url = URI.parse(redis_url) %>
+    auto_ssl:set("redis", {
+      host = <%= '"%s"' % redis_url.host %>,
+      port = <%= '"%s"' % redis_url.port %>,
+      auth = <%= '"%s"' % redis_url.password %>,
+      db = 1
+    })
+    <% end %>
+    <% if ENV['USE_LE_STAGING'] == 'true' %>
+    auto_ssl:set("ca", "https://acme-staging-v02.api.letsencrypt.org/directory")
+    <% end %>
+
+    -- Define a function to determine which SNI domains to automatically handle
+    -- and register new certificates for. Defaults to not allowing any domains,
+    -- so this must be configured.
+    auto_ssl:set("allow_domain", function(domain)
+      local http = require("resty.http")
+      local httpc = http.new()
+
+      httpc:set_timeout(5000)
+
+      local ok, coerr = httpc:connect(<%= '"unix:%s"' % ENV['NODE_PORT'] %>)
+
+      if not ok then
+        ngx.log(ngx.ERR, err)
+        return false
+      end
+
+      local path = "/domains/"..domain
+      print("Querying API for custom domain: ", path)
+
+      local res, err = httpc:request({
+        path = path,
+        method = "GET",
+        headers = {
+          ["Host"] = "localhost",
+        }
+      })
+
+      if not res then
+        print("Failed to request: ", err)
+        return false
+      end
+
+      if res.status == 200 then
+        print("Domain is allowed! Status code: ", res.status, " _id: ", res.body)
+        return true
+      end
+
+      if res.status == 404 then
+        print("Domain not found. Status code: ", res.status)
+        return false
+      end
+
+      print("Unexpected response from API. Status code: ", res.status)
+      return false
+    end)
+
+    auto_ssl:init()
+  }
+
+  init_worker_by_lua_block {
+    auto_ssl:init_worker()
+  }
+
+  # HTTPS server
+  server {
+    listen <%= ENV['PORT'] %> ssl;
+    server_name _;
+    keepalive_timeout 5;
+
+    # Dynamic handler for issuing or returning certs for SNI domains.
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    # Self signed fallback certificate:
+    ssl_certificate ../ssl/localhost.crt;
+    ssl_certificate_key ../ssl/localhost.key;
+
+    # root /app/public; # path to your app
+
+    location / {
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header Host $http_host;
+      proxy_redirect off;
+      proxy_pass http://app_server;
+    }
+  }
+
+  # HTTP server
+  server {
+    listen <%= ENV.fetch('NGINX_LE_PORT', ENV['PORT']) %>;
+
+    # Endpoint used for performing domain verification with Let's Encrypt.
+    location /.well-known/acme-challenge/ {
+      content_by_lua_block {
+        auto_ssl:challenge_server()
+      }
+    }
+  }
+
+  # Internal server running on port 8999 for handling certificate tasks.
+  server {
+    listen 127.0.0.1:8999;
+
+    # Increase the body buffer size, to ensure the internal POSTs can always
+    # parse the full POST contents into memory.
+    client_body_buffer_size 128k;
+    client_max_body_size 128k;
+
+    location / {
+      content_by_lua_block {
+        auto_ssl:hook_server()
+      }
+    }
+  }
+}
