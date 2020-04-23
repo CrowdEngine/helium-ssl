@@ -1,2 +1,2 @@
 https://github.com/blarralde/heroku-buildpack-openresty-auto-ssl
-heroku/nodejs
+https://github.com/heroku/heroku-buildpack-nodejs
