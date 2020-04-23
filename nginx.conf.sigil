@@ -20,7 +20,7 @@ init_by_lua_block {
   auto_ssl = (require "resty.auto-ssl").new()
 
   auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
-  {{ $redis_url := var 'REDIS_URL'] }}
+  {{ $redis_url := var 'REDIS_URL' }}
   {{ $redis_host := $redis_url | split "@" | index 1 | split ":" | index 0 }}
   {{ $redis_port := $redis_url | split "@" | index 1 | split ":" | index 1 }}
   {{ $redis_auth := $redis_url | split "@" | index 0 | split ":" | index 1 }}
