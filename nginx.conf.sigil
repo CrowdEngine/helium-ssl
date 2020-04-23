@@ -1,3 +1,10 @@
+daemon off;
+
+events {
+  accept_mutex on;
+  worker_connections 1024;
+}
+
 http {
   # The "auto_ssl" shared dict should be defined with enough storage space to
   # hold your certificate data. 1MB of storage holds certificates for
