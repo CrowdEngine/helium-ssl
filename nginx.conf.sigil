@@ -60,7 +60,7 @@ http {
 
       httpc:set_timeout(5000)
 
-      local ok, coerr = httpc:connect("unix:{{ var "NODE_PORT" }}")
+      local ok, coerr = httpc:connect("http://127.0.0.1:{{ var "NODE_PORT" }}")
 
       if not ok then
         ngx.log(ngx.ERR, err)
