@@ -125,7 +125,7 @@ http {
   init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
-
+<%#
   # HTTPS server
   server {
     listen <%= ENV['PORT'] %> ssl;
@@ -151,16 +151,23 @@ http {
       proxy_pass http://app_server;
     }
   }
+  %>
 
   # HTTP server
   server {
     listen <%= ENV.fetch('NGINX_LE_PORT', ENV['PORT']) %>;
+    server_name _;
 
     # Endpoint used for performing domain verification with Let's Encrypt.
     location /.well-known/acme-challenge/ {
       content_by_lua_block {
         auto_ssl:challenge_server()
       }
+    }
+
+    location / {
+      #return 301 https://$host$request_uri;
+      return 204;
     }
   }
 
