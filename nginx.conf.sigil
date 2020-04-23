@@ -21,9 +21,14 @@ init_by_lua_block {
 
   auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
   {{ $redis_url := var "REDIS_URL" }}
-  {{ $redis_host := $redis_url | split "@" | index 1 | split ":" | index 0 }}
-  {{ $redis_port := $redis_url | split "@" | index 1 | split ":" | index 1 }}
-  {{ $redis_auth := $redis_url | split "@" | index 0 | split ":" | index 1 }}
+  {{ $redis_url_map := $redis_url | split "@" }}
+  {{ $redis_host_map := index $redis_url_map 1 }}
+  {{ $redis_host_map := $redis_host_map | split ":" }}
+  {{ $redis_host := index $redis_host_map 0 }}
+  {{ $redis_port := index $redis_host_map 1 }}
+  {{ $redis_auth_map := index $redis_url_map 0 }}
+  {{ $redis_auth_map := $redis_auth_map | split ":" }}
+  {{ $redis_auth := index $redis_host_map 1 }}
   auto_ssl:set("redis", {
     host = "{{ $redis_host }}",
     port = "{{ $redis_port }}",
