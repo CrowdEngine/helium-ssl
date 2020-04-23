@@ -20,7 +20,7 @@ init_by_lua_block {
   auto_ssl = (require "resty.auto-ssl").new()
 
   auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
-  {{ $redis_url := var 'REDIS_URL' }}
+  {{ $redis_url := var "REDIS_URL" }}
   {{ $redis_host := $redis_url | split "@" | index 1 | split ":" | index 0 }}
   {{ $redis_port := $redis_url | split "@" | index 1 | split ":" | index 1 }}
   {{ $redis_auth := $redis_url | split "@" | index 0 | split ":" | index 1 }}
@@ -31,8 +31,8 @@ init_by_lua_block {
     db = 1
   })
 
-  {{ $use_le_staging := var 'USE_LE_STAGING' }}
-  {{ if eq $use_le_staging 'true' }}
+  {{ $use_le_staging := var "USE_LE_STAGING" }}
+  {{ if eq $use_le_staging "true" }}
   auto_ssl:set("ca", "https://acme-staging-v02.api.letsencrypt.org/directory")
   {{ end }}
 
@@ -45,7 +45,7 @@ init_by_lua_block {
 
     httpc:set_timeout(5000)
 
-    local ok, coerr = httpc:connect("unix:{{ var 'NODE_PORT' }}")
+    local ok, coerr = httpc:connect("unix:{{ var "NODE_PORT" }}")
 
     if not ok then
       ngx.log(ngx.ERR, err)
@@ -239,5 +239,5 @@ server {
 }
 
 upstream app_server {
-  server {{ var 'UPSTREAM_SERVER_URL' }} fail_timeout=0;
+  server {{ var "UPSTREAM_SERVER_URL" }} fail_timeout=0;
 }
