@@ -125,33 +125,6 @@ http {
   init_worker_by_lua_block {
     auto_ssl:init_worker()
   }
-<%#
-  # HTTPS server
-  server {
-    listen <%= ENV['PORT'] %> ssl;
-    server_name _;
-    keepalive_timeout 5;
-
-    # Dynamic handler for issuing or returning certs for SNI domains.
-    ssl_certificate_by_lua_block {
-      auto_ssl:ssl_certificate()
-    }
-
-    # Self signed fallback certificate:
-    ssl_certificate ../ssl/localhost.crt;
-    ssl_certificate_key ../ssl/localhost.key;
-
-    # root /app/public; # path to your app
-
-    location / {
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header Host $http_host;
-      proxy_redirect off;
-      proxy_pass http://app_server;
-    }
-  }
-  %>
 
   # HTTP server
   server {
