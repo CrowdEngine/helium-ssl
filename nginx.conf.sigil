@@ -33,13 +33,13 @@ http {
       {{ $redis_auth_map := index $redis_url_map 0 }}
       {{ $redis_auth_map := $redis_auth_map | split ":" }}
       {{ $redis_auth := index $redis_auth_map 1 }}
-    {{ end }}
     auto_ssl:set("redis", {
       host = "{{ $redis_host }}",
       port = "{{ $redis_port }}",
       auth = "{{ $redis_auth }}",
       db = 1
     })
+    {{ end }}
 
     {{ $use_le_staging := var "USE_LE_STAGING" }}
     {{ if eq $use_le_staging "true" }}
