@@ -68,6 +68,7 @@ app.get('/domains/:domain', function (req, res) {
       }
     })
     .catch(err => {
+      lerror('Query error:');
       lerror(err);
       res.status(500).send('500');
     });

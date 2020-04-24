@@ -1,11 +1,11 @@
-const { Pool } = require('pg');
+const { Client } = require('pg');
 const { config } = require('../config/pg');
 const { log } = require('./log');
 
 log(`Using the following PG config:`);
 log(config);
 
-const client = new Pool(config);
+const client = new Client(config);
 
 const query = (q) => {
   log(`Querying DB: "${q}"`);
