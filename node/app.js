@@ -3,7 +3,7 @@ const db = require('./support/db');
 const { log, lerror } = require('./support/log');
 
 const DOMAIN_QUERY = (domain) => `SELECT 1 FROM platforms WHERE domain = '${escape(domain)}';`;
-const PORT = process.env.NODE_PORT;
+const PORT = process.env.PORT;
 
 const app = express();
 
@@ -21,12 +21,12 @@ function shutdown(signal) {
       log('...waited 5s, exiting.');
 
       // Removes socket
-      const fs = require('fs');
-      try {
-        fs.unlinkSync(PORT);
-      } catch(err) {
-        lerror(err);
-      }
+      // const fs = require('fs');
+      // try {
+      //   fs.unlinkSync(PORT);
+      // } catch(err) {
+      //   lerror(err);
+      // }
 
       // Exits
       process.exit(err ? 1 : 0);
