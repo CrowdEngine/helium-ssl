@@ -1,7 +1,7 @@
 const config = (process.env.DATABASE_URL)
   ?
     {
-      connectionString: process.env.DATABASE_URL,
+      connectionString: `${process.env.DATABASE_URL}?sslmode=require`,
       ssl: true
     }
   :

@@ -10,7 +10,7 @@ const now = () => {
 };
 const normalize = (msg) => typeof(msg) == 'object' ? JSON.stringify(msg) : msg;
 const log = (msg) => console.log(`[${now()}] - ${normalize(msg)}`);
-const lerror = (msg) => console.error(`[${now()}] - ${normalize(msg)}`);
+const lerror = (msg) => console.error(`[${now()}] - [ERROR] ${normalize(msg)}`);
 
 module.exports = {
   lerror,
