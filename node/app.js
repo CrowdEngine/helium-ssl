@@ -2,7 +2,9 @@ const express = require('express');
 const db = require('./support/db');
 const { log, lerror } = require('./support/log');
 
-const DOMAIN_QUERY = (domain) => `SELECT 1 FROM platforms WHERE domain = '${escape(domain)}';`;
+const DOMAIN_COLUMN = 'domain';
+const DOMAIN_QUERY = (column, domain) => `SELECT 1 FROM platforms WHERE ${column} = '${escape(domain)}';`;
+const SUBDOMAIN_COLUMN = 'subdomain';
 const PORT = process.env.PORT;
 
 const app = express();
@@ -34,6 +36,15 @@ function shutdown(signal) {
   };
 }
 
+const getHost = (domain) => {
+  var domainParts = domain.split('.');
+  return domainParts.slice(domainParts.length - 2).join('.');
+};
+
+const getSubdomain = (domain) => domain.split('.')[0];
+
+const shouldUseSubdomain = (host) => host === process.env.DEFAULT_HOST;
+
 // Logging middleware
 app.use((req, res, next) => {
   log(`${req.method} on ${req.path} with params: ${JSON.stringify(req.params)}`);
@@ -43,9 +54,12 @@ app.use((req, res, next) => {
 // Request handler; checks if domain exists in DB
 app.get('/domains/:domain', function (req, res) {
   const domain = req.params.domain;
+  const host = getHost(domain);
+  const column = shouldUseSubdomain(host) ? SUBDOMAIN_COLUMN : DOMAIN_COLUMN;
+  const queryParam = shouldUseSubdomain(host) ? getSubdomain(domain) : domain;
 
   db
-    .query(DOMAIN_QUERY(domain))
+    .query(DOMAIN_QUERY(column, queryParam))
     .then(dbres => {
       if (dbres.rows[0]) {
         res.status(200).send('OK');
