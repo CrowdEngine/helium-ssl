@@ -34,7 +34,7 @@ http {
   client_body_timeout 5;
 
   upstream app_server {
-    server <%= ENV['UPSTREAM_SERVER_URL'] %> fail_timeout=0;
+    server <%= ENV['UPSTREAM_SERVER_URL'] %>:443 fail_timeout=0;
   }
 
   # The "auto_ssl" shared dict should be defined with enough storage space to
@@ -52,15 +52,17 @@ http {
   # default DNS servers, which can be found in /etc/resolv.conf. If your network
   # is not IPv6 compatible, you may wish to disable IPv6 results by using the
   # "ipv6=off" flag (like "resolver 8.8.8.8 ipv6=off").
-  resolver 8.8.8.8;
+  resolver <%= ENV.fetch('NGINX_RESOLVER', '8.8.8.8') %>;
 
   # Initial setup tasks.
   init_by_lua_block {
     auto_ssl = (require "resty.auto-ssl").new()
 
-    auto_ssl:set("dir", <%= '"%s"' % ENV.fetch('RESTY_AUTO_SSL_DIR', "/resty-auto-ssl") %>)
+    <% if ENV['RESTY_AUTO_SSL_DIR'] %>
+    auto_ssl:set("dir", <%= '"%s"' % ENV['RESTY_AUTO_SSL_DIR'] %>)
+    <% end %>
     auto_ssl:set("storage_adapter", "resty.auto-ssl.storage_adapters.redis")
-    <% if redis_url = ENV['REDISTOGO_URL'] || ENV['REDIS_URL'] %>
+    <% if redis_url = ENV['REDIS_URL'] %>
     <% redis_url = URI.parse(redis_url) %>
     auto_ssl:set("redis", {
       host = <%= '"%s"' % redis_url.host %>,
@@ -82,7 +84,7 @@ http {
 
       httpc:set_timeout(5000)
 
-      local ok, coerr = httpc:connect(<%= '"unix:%s"' % ENV['NODE_PORT'] %>)
+      local ok, coerr = httpc:connect(<%= '"%s"' % ENV['NODE_API_HOST'] %>, <%= ENV['NODE_API_PORT'] %>)
 
       if not ok then
         ngx.log(ngx.ERR, err)
@@ -94,10 +96,7 @@ http {
 
       local res, err = httpc:request({
         path = path,
-        method = "GET",
-        headers = {
-          ["Host"] = "localhost",
-        }
+        method = "GET"
       })
 
       if not res then
@@ -126,9 +125,36 @@ http {
     auto_ssl:init_worker()
   }
 
+  # HTTPS server
+  server {
+    listen <%= ENV.fetch('HTTPS_PORT', 443) %> ssl;
+    server_name _;
+    keepalive_timeout 5;
+
+    # Dynamic handler for issuing or returning certs for SNI domains.
+    ssl_certificate_by_lua_block {
+      auto_ssl:ssl_certificate()
+    }
+
+    # Self signed fallback certificate:
+    ssl_certificate ../ssl/localhost.crt;
+    ssl_certificate_key ../ssl/localhost.key;
+
+    # root /app/public; # path to your app
+
+    location / {
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host $http_host;
+      proxy_redirect off;
+      proxy_pass https://app_server;
+    }
+  }
+
   # HTTP server
   server {
-    listen <%= ENV.fetch('NGINX_LE_PORT', ENV['PORT']) %>;
+    listen <%= ENV.fetch('HTTP_PORT', 80) %>;
     server_name _;
 
     # Endpoint used for performing domain verification with Let's Encrypt.
@@ -139,8 +165,7 @@ http {
     }
 
     location / {
-      #return 301 https://$host$request_uri;
-      return 204;
+      return 301 https://$host:<%= ENV.fetch('HTTPS_PORT', 443) %>$request_uri;
     }
   }
 
