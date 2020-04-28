@@ -1,4 +1,4 @@
-<% begin; require 'dotenv/load'; rescue LoadError; end %>
+<% begin; require 'dotenv'; Dotenv.load(File.expand_path('../../.env', __FILE__)); rescue LoadError; end %>
 
 daemon off;
 
@@ -46,6 +46,9 @@ http {
   # omit it.
   lua_shared_dict auto_ssl_settings 64k;
 
+  lua_ssl_verify_depth 2;
+  lua_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+
   # A DNS resolver must be defined for OCSP stapling to function.
   #
   # This example uses Google's DNS server. You may want to use your system's
@@ -84,17 +87,10 @@ http {
 
       httpc:set_timeout(5000)
 
-      local ok, coerr = httpc:connect(<%= '"%s"' % ENV['NODE_API_HOST'] %>, <%= ENV['NODE_API_PORT'] %>)
+      local path = <%= '"%s"' % ENV['ALLOW_DOMAIN_API_PATH'] %>..domain
+      print("Querying API for custom domain: ", domain)
 
-      if not ok then
-        ngx.log(ngx.ERR, err)
-        return false
-      end
-
-      local path = "/domains/"..domain
-      print("Querying API for custom domain: ", path)
-
-      local res, err = httpc:request({
+      local res, err = httpc:request_uri(<%= '"%s"' % ENV['ALLOW_DOMAIN_API_URL'] %>, {
         path = path,
         method = "GET"
       })

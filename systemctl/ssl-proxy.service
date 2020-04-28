@@ -1,0 +1,11 @@
+[Unit]
+Description=SSL proxy (openresty/nginx)
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+ExecStart=/home/ubuntu/app/start-nginx /home/ubuntu
+Restart=always
+PIDFile=/var/run/ssl-proxy.pid

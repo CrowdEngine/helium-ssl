@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+HOME_DIR=$1
+APP_DIR=$HOME_DIR/app
+
+echo "Working directory: $APP_DIR"
+
+getInstanceId() {
+  INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+  echo "$INSTANCE_ID"
+}
+
+getRegion() {
+  REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
+  echo "$REGION"
+}
+
+# Loads the Tags from the current instance
+getInstanceTags () {
+  INSTANCE_ID=$(getInstanceId)
+  REGION=$(getRegion)
+  # Describe the tags of this instance
+  aws ec2 describe-tags --region "$REGION" --filters "Name=resource-id,Values=$INSTANCE_ID"
+}
+
+# Convert the tags to environment variables.
+# Based on https://github.com/berpj/ec2-tags-env/pull/1
+tags_to_env () {
+  echo > $APP_DIR/.env
+  tags=$1
+
+  for key in $(echo $tags | /usr/bin/jq -r ".[][].Key"); do
+    value=$(echo $tags | /usr/bin/jq -r ".[][] | select(.Key==\"$key\") | .Value")
+    key=$(echo $key | /usr/bin/tr '-' '_' | /usr/bin/tr '[:lower:]' '[:upper:]')
+    echo "Exporting $key=$value"
+    echo "$key=$value" >> $APP_DIR/.env
+  done
+}
+
+# Execute the commands
+echo "Fetching .env values"
+instanceTags=$(getInstanceTags)
+echo "instanceTags=$instanceTags"
+echo "Parsing .env values"
+tags_to_env "$instanceTags"
+echo "Exporting NGINX_RESOLVER=$(grep -n "nameserver" /etc/resolv.conf | cut -d ' ' -f 2) ipv6=off"
+echo "NGINX_RESOLVER=$(grep -n "nameserver" /etc/resolv.conf | cut -d ' ' -f 2) ipv6=off" >> $APP_DIR/.env
+
+# Evaluate config to get $PORT
+erb $APP_DIR/config/nginx.conf.erb > $APP_DIR/config/nginx.conf
+
+psmgr=/tmp/nginx-buildpack-wait
+rm -f $psmgr
+mkfifo $psmgr
+
+# Initialize log directory.
+mkdir -p $APP_DIR/logs/nginx
+touch $APP_DIR/logs/nginx/access.log $APP_DIR/logs/nginx/error.log
+echo 'buildpack=nginx at=logs-initialized'
+
+# Start log redirection.
+(
+  # Redirect nginx logs to stdout.
+  tail -qF -n 0 $APP_DIR/logs/nginx/*.log
+  echo 'logs' >$psmgr
+) &
+
+# Start nginx
+(
+  # We expect nginx to run in foreground.
+  # We also expect a socket to be at /tmp/nginx.socket.
+  echo 'buildpack=nginx at=nginx-start'
+  openresty -p . -c $APP_DIR/config/nginx.conf
+  echo 'nginx' >$psmgr
+) &
+
+# This read will block the process waiting on a msg to be put into the fifo.
+# If any of the processes defined above should exit,
+# a msg will be put into the fifo causing the read operation
+# to un-block. The process putting the msg into the fifo
+# will use its process name as a msg so that we can print the offending
+# process to stdout.
+read exit_process <$psmgr
+echo "buildpack=nginx at=exit process=$exit_process"
+exit 1

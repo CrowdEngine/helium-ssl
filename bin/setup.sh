@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+cd ~
+
 # ---OpenResty---
 sudo apt-get -y install --no-install-recommends wget gnupg ca-certificates
 
@@ -54,30 +58,25 @@ cd app
 wget https://raw.githubusercontent.com/heedsoftware/auto-assign-elastic-ip/master/auto-assign-elastic-ip.sh
 chmod 744 auto-assign-elastic-ip.sh
 
-vim rename-instance.sh
+wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/rename-instance.sh
 chmod 744 rename-instance.sh
 
-vim start-nginx
+wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/start-nginx.sh
 chmod 744 start-nginx
 
 mkdir logs
 mkdir config
-vim config/nginx.conf.erb
-vim config/mime.types
+cd config
+wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/config/nginx.conf.erb
+wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/config/mime.types
+cd ..
 mkdir ssl
-vim ssl/localhost.crt
-vim ssl/localhost.key
+cd ssl
+wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/ssl/localhost.crt
+wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/ssl/localhost.key
+cd ..
 touch .env
 
-sudo bash -c 'echo "[Unit]
-Description=SSL proxy (openresty/nginx)
-After=network.target
-
-[Install]
-WantedBy=multi-user.target
-
-[Service]
-ExecStart=/home/ubuntu/app/start-nginx /home/ubuntu
-Restart=always
-PIDFile=/var/run/ssl-proxy.pid" > /etc/systemd/system/ssl-proxy.service'
+cd /etc/systemd/system/
+sudo wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/systemctl/ssl-proxy.service
 sudo systemctl enable ssl-proxy.service
