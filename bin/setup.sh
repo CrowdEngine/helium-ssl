@@ -41,7 +41,7 @@ sudo make install
 cd ~
 
 # ---resty-auto-ssl---
-luarocks install lua-resty-auto-ssl
+sudo luarocks install lua-resty-auto-ssl
 sudo mkdir /etc/resty-auto-ssl
 sudo chmod 777 /etc/resty-auto-ssl
 sudo ln -s $(pwd)/lua_modules/share/lua/5.3 /usr/local/share/lua/5.1
@@ -61,10 +61,11 @@ chmod 744 auto-assign-elastic-ip.sh
 wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/rename-instance.sh
 chmod 744 rename-instance.sh
 
-wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/start-nginx.sh
+wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/start-nginx
 chmod 744 start-nginx
 
 mkdir logs
+touch logs/error.log
 mkdir config
 cd config
 wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/config/nginx.conf.erb
@@ -77,6 +78,8 @@ wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/ssl/localho
 cd ..
 touch .env
 
+sudo systemctl stop openresty.service
+sudo systemctl disable openresty.service
 cd /etc/systemd/system/
 sudo wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/systemctl/ssl-proxy.service
 sudo systemctl enable ssl-proxy.service
