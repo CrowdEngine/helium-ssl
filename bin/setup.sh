@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-cd ~
+HOME_DIR=$1
+if [ -z $HOME_DIR ]
+then
+  $HOME_DIR=~
+fi
+
+cd $HOME_DIR
 
 # ---OpenResty---
 sudo apt-get -y install --no-install-recommends wget gnupg ca-certificates
@@ -38,7 +44,7 @@ cd luarocks-3.3.1
 make
 sudo make install
 
-cd ~
+cd $HOME_DIR
 
 # ---resty-auto-ssl---
 sudo luarocks install lua-resty-auto-ssl
