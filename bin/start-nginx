@@ -59,7 +59,7 @@ rm -f $psmgr
 mkfifo $psmgr
 
 # Initialize log directory.
-mkdir /var/log/nginx
+mkdir -p /var/log/nginx
 touch /var/log/nginx/access.log
 touch /var/log/nginx/error.log
 

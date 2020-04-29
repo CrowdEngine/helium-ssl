@@ -5,6 +5,10 @@ daemon off;
 
 worker_processes <%= ENV['NGINX_WORKERS'] || 4 %>;
 
+error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/log/nginx/error.log" %> notice;
+error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/log/nginx/error.log" %> info;
+pif /var/run/ssl-proxy.pid;
+
 events {
   accept_mutex on;
   worker_connections 1024;
@@ -23,9 +27,7 @@ http {
   server_tokens off;
 
   log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
-  access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/logs/nginx/access.log" %> l2met;
-  error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/logs/nginx/error.log" %> notice;
-  error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/logs/nginx/error.log" %> info;
+  access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> l2met;
 
   include mime.types;
   default_type application/octet-stream;
