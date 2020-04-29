@@ -96,4 +96,4 @@ echo "Your instance will now change IP and you will get disconnected from SSH"
 echo "***********************************************************************"
 echo "***********************************************************************"
 echo "***********************************************************************"
-./$HOME_DIR/app/auto-assign-elastic-ip.sh
+.$HOME_DIR/app/auto-assign-elastic-ip.sh
