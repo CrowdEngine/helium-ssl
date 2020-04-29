@@ -89,5 +89,11 @@ cd /etc/systemd/system/
 sudo wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/systemctl/ssl-proxy.service
 sudo systemctl enable ssl-proxy.service
 
+echo "***********************************************************************"
+echo "***********************************************************************"
+echo "***********************************************************************"
 echo "Your instance will now change IP and you will get disconnected from SSH"
-./auto-assign-elastic-ip.sh
+echo "***********************************************************************"
+echo "***********************************************************************"
+echo "***********************************************************************"
+./$HOME_DIR/app/auto-assign-elastic-ip.sh

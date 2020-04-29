@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 if [ -z $1 ]
+then
   echo "Missing $1 argument (HOME_DIR)"
   exit 1
 fi
@@ -58,15 +59,16 @@ rm -f $psmgr
 mkfifo $psmgr
 
 # Initialize log directory.
-touch $APP_DIR/logs/access.log
-touch $APP_DIR/logs/error.log
+mkdir /var/log/nginx
+touch /var/log/nginx/access.log
+touch /var/log/nginx/error.log
 
 echo 'buildpack=nginx at=logs-initialized'
 
 # Start log redirection.
 (
   # Redirect nginx logs to stdout.
-  tail -qF -n 0 $APP_DIR/logs/*.log
+  tail -qF -n 0 /var/log/nginx/*.log
   echo 'logs' >$psmgr
 ) &
 
