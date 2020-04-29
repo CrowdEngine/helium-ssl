@@ -61,7 +61,6 @@ cd app
 
 wget https://raw.githubusercontent.com/heedsoftware/auto-assign-elastic-ip/master/auto-assign-elastic-ip.sh
 chmod 744 auto-assign-elastic-ip.sh
-./auto-assign-elastic-ip.sh
 
 wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/rename-instance.sh
 chmod 744 rename-instance.sh
@@ -89,3 +88,6 @@ sudo systemctl disable openresty.service
 cd /etc/systemd/system/
 sudo wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/systemctl/ssl-proxy.service
 sudo systemctl enable ssl-proxy.service
+
+echo "Your instance will now change IP and you will get disconnected from SSH"
+./auto-assign-elastic-ip.sh
