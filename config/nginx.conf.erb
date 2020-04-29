@@ -7,7 +7,7 @@ worker_processes <%= ENV['NGINX_WORKERS'] || 1 %>;
 
 error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/log/nginx/error.log" %> notice;
 error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/log/nginx/error.log" %> info;
-pif /var/run/ssl-proxy.pid;
+pid /var/run/ssl-proxy.pid;
 
 events {
   accept_mutex on;
