@@ -27,8 +27,7 @@ sudo apt-get update
 sudo apt-get -y install --no-install-recommends openresty
 
 # ---LuaRocks---
-sudo apt-get -y install build-essential libreadline-dev
-sudo apt-get -y install unzip
+sudo apt-get -y install build-essential libreadline-dev unzip
 
 curl -R -O http://www.lua.org/ftp/lua-5.3.4.tar.gz
 tar -zxf lua-5.3.4.tar.gz
@@ -36,15 +35,13 @@ cd lua-5.3.4
 make linux test
 sudo make install
 
+cd $HOME_DIR
 wget https://luarocks.org/releases/luarocks-3.3.1.tar.gz
 tar zxpf luarocks-3.3.1.tar.gz
 cd luarocks-3.3.1
-
 ./configure
 make
 sudo make install
-
-cd $HOME_DIR
 
 # ---resty-auto-ssl---
 sudo luarocks install lua-resty-auto-ssl
@@ -58,14 +55,17 @@ sudo gem install dotenv
 sudo apt-get install -y jq
 sudo apt-get install -y awscli
 
+cd $HOME_DIR
 mkdir app
 cd app
 
 wget https://raw.githubusercontent.com/heedsoftware/auto-assign-elastic-ip/master/auto-assign-elastic-ip.sh
 chmod 744 auto-assign-elastic-ip.sh
+./auto-assign-elastic-ip.sh
 
 wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/rename-instance.sh
 chmod 744 rename-instance.sh
+./rename-instance.sh
 
 wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/bin/start-nginx
 chmod 744 start-nginx
