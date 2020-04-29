@@ -3,7 +3,7 @@
 
 daemon off;
 
-worker_processes <%= ENV['NGINX_WORKERS'] || 4 %>;
+worker_processes <%= ENV['NGINX_WORKERS'] || 1 %>;
 
 error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/log/nginx/error.log" %> notice;
 error_log  <%= ENV['NGINX_ERROR_LOG_PATH'] || "/var/log/nginx/error.log" %> info;
@@ -11,7 +11,7 @@ pif /var/run/ssl-proxy.pid;
 
 events {
   accept_mutex on;
-  worker_connections 1024;
+  worker_connections <%= ENV['NGINX_CONNECTIONS'] || 1024 %>;
 }
 
 http {
