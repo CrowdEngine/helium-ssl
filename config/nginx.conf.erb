@@ -27,6 +27,7 @@ http {
   server_tokens off;
 
   log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
+  access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> combined;
   access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> l2met;
 
   include mime.types;
@@ -115,6 +116,25 @@ http {
 
       print("Unexpected response from API. Status code: ", res.status)
       return false
+    end)
+
+    auto_ssl:set("request_domain", function(ssl, ssl_options)
+      local domain, err = ssl.server_name()
+
+      if domain:match("%.<%= ENV.fetch('DEFAULT_HOST', "no.special.domain.set") %>$")
+      then
+        print("Found special domain, generating wildcard...")
+        local t = {}
+        for str in domain:gmatch("[^%.]+") do
+          table.insert(t, str)
+        end
+        table.remove(t, 1)
+        domain = "*."..table.concat(t, ".")
+      end
+
+      print("Using domain: "..domain)
+
+      return domain, err
     end)
 
     auto_ssl:init()
