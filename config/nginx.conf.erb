@@ -28,7 +28,7 @@ http {
 
   log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
   access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> combined;
-  access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> l2met;
+  # access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> l2met;
 
   include mime.types;
   default_type application/octet-stream;
@@ -144,6 +144,10 @@ http {
     auto_ssl:init_worker()
   }
 
+  # Cache
+  proxy_cache_path /home/ubuntu/app/cache/assets levels=1:2 keys_zone=asset_cache:10m
+                 inactive=43200 use_temp_path=off;
+
   # HTTPS server
   server {
     listen <%= ENV.fetch('HTTPS_PORT', 443) %> ssl;
@@ -159,14 +163,31 @@ http {
     ssl_certificate ../ssl/localhost.crt;
     ssl_certificate_key ../ssl/localhost.key;
 
-    # root /app/public; # path to your app
-
     location / {
       proxy_set_header X-Real-IP $remote_addr;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header Host $http_host;
       proxy_redirect off;
+      proxy_ignore_client_abort on;
+      proxy_pass https://app_server;
+    }
+
+    location /assets/ {
+      add_header X-Cache-Status $upstream_cache_status;
+      add_header Cache-Control "max-age=31536000, public";
+
+      proxy_cache asset_cache;
+      proxy_ignore_headers Cache-Control;
+      proxy_cache_valid 525600m;
+      proxy_cache_lock on;
+
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Host $http_host;
+      proxy_redirect off;
+      proxy_ignore_client_abort on;
       proxy_pass https://app_server;
     }
   }
