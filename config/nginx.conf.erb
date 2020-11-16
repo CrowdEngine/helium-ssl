@@ -26,8 +26,9 @@ http {
 
   server_tokens off;
 
+  log_format upstreamlog '[$time_local] $remote_addr - $remote_user - $server_name $host to: $upstream_addr: $request $status upstream_response_time $upstream_response_time msec $msec request_time $request_time | UA: $http_user_agent';
   log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
-  access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> combined;
+  access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> upstreamlog;
   # access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || "/var/log/nginx/access.log" %> l2met;
 
   include mime.types;

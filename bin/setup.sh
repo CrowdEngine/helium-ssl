@@ -88,6 +88,7 @@ sudo systemctl disable openresty.service
 cd /etc/systemd/system/
 sudo wget https://raw.githubusercontent.com/CrowdEngine/helium-ssl/master/systemctl/ssl-proxy.service
 sudo systemctl enable ssl-proxy.service
+(sudo crontab -l ; echo "@daily systemctl restart ssl-proxy.service") | sudo crontab -
 
 echo "***********************************************************************"
 echo "***********************************************************************"
