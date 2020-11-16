@@ -1,5 +1,6 @@
 <% this_dir = File.expand_path('../..', __FILE__) %>
 <% begin; require 'dotenv'; Dotenv.load(this_dir + '/.env'); rescue LoadError; end %>
+<% require 'uri' %>
 
 daemon off;
 
